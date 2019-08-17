@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+
+    <style>
+      body {
+        background: linear-gradient(#0f0220, #2f4077);
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #player {
+        background: #dbc711;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        z-index: 10;
+      }
+
+      #score {
+        width: 100px;
+        z-index: 20;
+        font-size: 50px;
+        color: aliceblue;
+        position: fixed;
+        left: calc(50% - 50px);
+        top: 20px;
+        text-align: center;
+      }
+
+      .obs {
+        width: 150px;
+        height: 2000px;
+        position: fixed;
+        background: #ac0056;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .innerObs {
+        width: 150px;
+        background: #1f1e1e;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="player"></div>
+    <p id="score"></p>
+
+    <script>
+      const W = window.W;
+      W.start();
+      const width = document.body.clientWidth;
+      const height = document.body.getBoundingClientRect().height;
+
+      const fps = 60;
+      const deltaTime = 1 / fps;
+
+      const obsHeight = 200;
+      const obsSpeed = 100;
+
+      const gAcc = 9.8;
+      const playerDim = 50;
+
+      let speed = 0;
+      let playerPos = 50;
+
+      let score = 0;
+
+      let obstacles = [];
+
+      document.body.style.position = "relative";
+
+      const initializePlayer = player => {
+        player.style.position = "fixed";
+        player.style.left = `calc(50% - ${playerDim / 2}px)`;
+        player.style.top = `${playerPos - playerDim / 2}px`;
+
+        document.body.addEventListener("keydown", e => {
+          if (e.key === " ") speed = 7;
+        });
+      };
+
+      const createObstacle = () => {
+        const pos = Math.random() * height;
+        const truePos =
+          pos < 150 ? 150 : pos > height - 150 ? height - 150 : pos;
+
+        const obs = {
+          id: `obs${obstacles.length}`,
+          pos: truePos,
+          start: truePos - obsHeight / 2,
+          end: truePos + obsHeight / 2,
+          x: document.body.clientWidth,
+          scored: false
+        };
+
+        obstacles.push(obs);
+
+        const obsElem = document.createElement("div");
+
+        obsElem.className = "obs";
+        obsElem.style.left = `${obs.x}px`;
+        obsElem.style.top = `${obs.pos - 1000}px`;
+        obsElem.id = obs.id;
+
+        document.body.appendChild(obsElem);
+
+        const inner = document.createElement("div");
+        inner.style.height = `${obsHeight}px`;
+        inner.className = "innerObs";
+        obsElem.appendChild(inner);
+      };
+
+      const moveObstacles = () => {
+        for (let i = 0; i < obstacles.length; i++) {
+          obstacles[i].x = obstacles[i].x - deltaTime * obsSpeed;
+          const obs = document.getElementById(obstacles[i].id);
+          obs.style.left = `${obstacles[i].x}px`;
+        }
+      };
+
+      const checkCollisions = () => {
+        const playerX = width / 2;
+        for (let i = 0; i < obstacles.length; i++) {
+          const isInside =
+            playerX > obstacles[i].x && playerX < obstacles[i].x + 150;
+
+          const hit =
+            isInside &&
+            (playerPos > obstacles[i].end || playerPos < obstacles[i].start);
+
+          if (hit) {
+            alert("you lose !!");
+            playerPos = -10;
+            obstacles = [];
+            location.reload();
+            break;
+          }
+        }
+      };
+
+      const checkScore = () => {
+        const playerX = width / 2;
+        for (let i = 0; i < obstacles.length; i++) {
+          if (obstacles[i].scored) continue;
+          if (playerX > obstacles[i].x + 150) {
+            score++;
+            obstacles[i].scored = true;
+            new Audio("score.mp3").play();
+          }
+        }
+      };
+
+      const player = document.getElementById("player");
+      initializePlayer(player);
+
+      setInterval(() => {
+        speed -= deltaTime * gAcc;
+        playerPos -= speed;
+        player.style.top = `${playerPos - 25}px`;
+        const deg = -speed * 4;
+        player.style.transform = `rotate(${
+          deg < -80 ? -80 : deg > 45 ? 45 : deg
+        }deg)`;
+
+        document.getElementById("score").innerText = score;
+
+        moveObstacles();
+        checkCollisions();
+        checkScore();
+
+        if (playerPos > height + 100) {
+          alert("you lose !!");
+          playerPos = -10;
+          location.reload();
+        }
+      }, 1000 / fps);
+
+      setInterval(() => {
+        createObstacle();
+      }, 4000);
+    </script>
+  </body>
+</html>
